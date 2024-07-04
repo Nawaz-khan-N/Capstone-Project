@@ -1,0 +1,52 @@
+aws mysql
+
+Database Name  :  salesproj
+Master username : admin
+Pass : UlMysql$
+
+
+salesproj.cty66u0swnw5.us-east-1.rds.amazonaws.com
+
+3306
+
+
+#Use gitbash here in particular folder
+
+
+mkdir aws-lambda-layer-python
+cd aws-lambda-layer-python
+mkdir -p build/python/lib/python3.9/site-packages
+pip install mysql-connector -t build/python/lib/python3.9/site-packages
+
+
+
+#Lambda Code
+
+import json
+import boto3
+import csv
+import mysql.connector
+from mysql.connector import Error
+from mysql.connector import errorcode
+s3_client = boto3.client('s3')
+def lambda_handler(event, context):
+    # TODO implement
+    bucket = event['Records'][0]['s3']['bucket']['name']
+    csv_file = event['Records'][0]['s3']['object']['key']
+    csv_file_obj = s3_client.get_object(Bucket=bucket, Key=csv_file)
+    lines = csv_file_obj['Body'].read().decode('utf-8').split()
+    results = []
+    for row in csv.DictReader(lines):
+        results.append(row.values())
+    print(results)
+    connection = mysql.connector.connect(host='salesproj.cty66u0swnw5.us-east-1.rds.amazonaws.com',database='saledb',user='admin',
+    password='UlMysql$')
+    mysql_empsql_insert_query = "INSERT INTO sales (store, Dept, Dates, weekly_sales, isHoliday)    VALUES (%s, %s, %s, %s,%s)"
+    cursor = connection.cursor()
+    cursor.executemany(mysql_empsql_insert_query,results)
+    connection.commit()
+    print(cursor.rowcount, "Record inserted successfully into employee table")
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Hello from Lambda!')
+    }
